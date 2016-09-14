@@ -175,6 +175,22 @@
         //first pass
         __block CGFloat maxDescender = 0;
         __block CGFloat maxCharHeight = 0;
+
+        // Check the paragraph style of this line.  If the line is centered, make sure that
+        // we center the drawing of the text relative to the frame.  Previously, it was
+        // relative to the LEFT of the frame, which led to text that was centered
+        // against itself and each of its lines, but NOT centered relative to its
+        // containing frame
+        NSRange effectiveRange;
+        NSParagraphStyle *paragraphStyle = [attributedString attribute:NSParagraphStyleAttributeName atIndex:lineRange.location longestEffectiveRange:&effectiveRange inRange:NSMakeRange(lineRange.location, lineRange.length)];
+        CGFloat originXOffset = 0.0;
+        // If we are centered text, our drawing X offset should account for the
+        // width of the text being drawn and the width of the frame it is being
+        // drawn in.
+        if (paragraphStyle && paragraphStyle.alignment == NSTextAlignmentCenter) {
+            originXOffset = (size.width - s.width) / 2.0;
+        }
+
         [lineString enumerateSubstringsInRange:NSMakeRange(0, lineRange.length) options:options usingBlock:^(NSString *substring, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
             NSMutableAttributedString *subLineString = [[attributedString attributedSubstringFromRange:NSMakeRange(enclosingRange.location + lineRange.location, enclosingRange.length)] mutableCopy];
             UIFont *font = [subLineString attribute:NSFontAttributeName atIndex:0 effectiveRange:NULL];
@@ -202,7 +218,10 @@
                 realHeight = lineHeight;
                 originDiff = 0;
             }
-            textBlock.charRect = CGRectMake(startOffset + lineOrigins[i].x, startOffsetY + originDiff, endOffset - startOffset, realHeight);
+            
+            // Take into account the originXOffset which could be different based on whether
+            // this line should be centered or not
+            textBlock.charRect = CGRectMake(originXOffset + startOffset + lineOrigins[i].x, startOffsetY + originDiff, endOffset - startOffset, realHeight);
             [textAttributes addObject:textBlock];
             
             if (self.layerBased) {                
