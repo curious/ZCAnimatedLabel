@@ -20,6 +20,8 @@
 @property (nonatomic, strong) ZCCoreTextLayout *layoutTool;
 @property (nonatomic, assign) NSTimeInterval animationStarTime;
 
+@property (nonatomic, copy) void (^completion)();
+
 @end
 
 @implementation ZCAnimatedLabel
@@ -84,6 +86,10 @@
     if (self.animationTime > self.animationDurationTotal) {
         self.displayLink.paused = YES;
         self.useDefaultDrawing = YES;
+        if (_completion) {
+            self.completion();
+            _completion = nil;
+        }
     }
     else { //update text attributeds array
         
@@ -262,24 +268,37 @@
     [self setNeedsDisplay];
 }
 
-
 - (void) startAppearAnimation
+{
+    [self startAppearAnimationWithCompletion:nil];
+}
+
+- (void) startAppearAnimationWithCompletion:(void (^)())completion
 {
     self.animatingAppear = YES;
     self.animationTime = 0;
     self.useDefaultDrawing = NO;
     self.displayLink.paused = NO;
     self.animationStarTime = 0;
+    
+    _completion = completion;
     [self setNeedsDisplay];
 }
 
 - (void) startDisappearAnimation
+{
+    [self startDisappearAnimationWithCompletion:nil];
+}
+
+- (void)startDisappearAnimationWithCompletion:(void (^)())completion
 {
     self.animatingAppear = NO;
     self.animationTime = 0;
     self.useDefaultDrawing = NO;
     self.displayLink.paused = NO;
     self.animationStarTime = 0;
+
+    _completion = completion;
     [self setNeedsDisplay]; //draw all rects
 }
 
